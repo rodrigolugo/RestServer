@@ -1,41 +1,73 @@
-const { request , response } = require('express');
+const { request, response } = require('express');
+const { encriptarPass } = require('../helpers/encriptacion');
+const Usuario = require('../models/usuario');
 
 
-const getUsuario = (req = request, res = response) =>{
-    const query = req.query
+
+
+
+const getUsuario = async (req = request, res = response) => {
+    const { pageNo, limit = 5 } = req.query
+    const query = {estado : true}
+
+
+    const [total, usuarios] = await Promise.all([
+        Usuario.countDocuments(query),
+        Usuario.find(query)
+        .skip(Number(pageNo))
+        .limit(Number(limit))
+    ]);
+
     res.json({
-        msg: 'get API -controller',
-        query
+        total,
+        usuarios
     })
 }
 
 
-const postUsuario = (req, res) => {
-    
-    const {nombre, edad} = req.body;
+const postUsuario = async (req, res = response) => {
+    const { nombre, correo, password, rol } = req.body;
+    const usuario = new Usuario({ nombre, correo, password, rol });
+
+    //encriptar el password
+    usuario.password = encriptarPass(password);
+    await usuario.save();
 
     res.json({
-        msg: 'post API',
-        nombre,
-        edad
+        msg: 'Usuario creado con exito',
+        usuario
     })
 }
 
-const putUsuario = (req = request, res) => {
-    const {id} = req.params
+
+const putUsuario = async (req = request, res) => {
+    const { id } = req.params
+
+    const { _id, password, estado, google, ...resto } = req.body;
+
+    if (password) {
+        resto.password = encriptarPass(password);
+    }
+
+
+    const usuario = await Usuario.findByIdAndUpdate(id, resto, { new: true });
+
     res.json({
-        msg: 'put API',
-        id
+        usuario
     })
 }
 
-const deleteUsuario = (req, res) => {
+const deleteUsuario = async (req, res) => {
+    const { id } = req.params;
+
+    const usuario = await Usuario.findByIdAndUpdate(id,{estado : false})
     res.json({
-        msg: 'delete API'
+        msg: 'User has been deleted succesful.',
+        usuario
     })
 }
 
-module.exports={
+module.exports = {
     getUsuario,
     postUsuario,
     putUsuario,
