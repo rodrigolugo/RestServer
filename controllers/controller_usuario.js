@@ -59,11 +59,13 @@ const putUsuario = async (req = request, res) => {
 
 const deleteUsuario = async (req, res) => {
     const { id } = req.params;
-
-    const usuario = await Usuario.findByIdAndUpdate(id,{estado : false})
+    //obtenemos el usuario autenticado de la request
+    const UsuarioAutenticado = req.UsuarioAutenticado;
+    const usuario = await Usuario.findByIdAndUpdate(id,{estado : false},{new: true})
     res.json({
         msg: 'User has been deleted succesful.',
-        usuario
+        usuario,
+        UsuarioAutenticado
     })
 }
 
