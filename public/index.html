@@ -1,12 +1,64 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
+    <title>Google sing-in</title>
 </head>
+
 <body>
-    <h1>Acceso denegado \(+__+)/</h1>
+    <h1>Google sing-in</h1>
+    <div id="g_id_onload" data-client_id="591458213141-pda7nj440l600pdvkoufnrmnb0m5kivp.apps.googleusercontent.com"
+        data-login_uri="https://your.domain/your_login_endpoint" data-auto_prompt="false"
+        data-callback="handleCredentialResponse">
+    </div>
+    <div class="g_id_signin" data-type="standard" data-size="large" data-theme="outline" data-text="sign_in_with"
+        data-shape="rectangular" data-logo_alignment="left">
+    </div>
+    <div>
+        <button id="sing-out">Sing Out</button>
+    </div>
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <script>
+        function handleCredentialResponse(response) {
+
+
+            //Obtener el token de google sing in
+            const body = { id_token: response.credential }
+
+            //direccionamos la funcion a nuestro controlador
+            fetch('http://localhost:8080/api/auth/google', {
+                method: 'POST',//metodo que vamos a utilizar
+                headers: {//configurar los header para ver que tipo de contenido estamos enviando
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(body)//serializamos el body
+            })
+                .then(resp => resp.json())//extraemos de la respuesta la parte del json
+                .then(
+                    resp => {
+                        console.log(resp)//regresamos la respuesta
+                        //guardar el correoen localStore
+                        localStorage.setItem('correo', resp.usuario.correo);
+                    }
+                ).catch(resp => console.warn)//lo que no salga bien lo regresamos 
+
+
+             const btn_out = document.getElementById('sing-out')
+             btn_out.onclick = () =>{
+
+                google.accounts.id.disableAutoSelect();
+                google.accounts.id.revoke( localStorage.getItem('correo'), done =>{
+                    localStorage.clear();
+                    location.reload();
+                })
+
+
+             }
+        }
+    </script>
 </body>
+
 </html>

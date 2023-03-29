@@ -1,7 +1,11 @@
-const { response, request } = require("express");
-const Usuario = require("../models/usuario");
+const { response, request } = require('express');
+const Usuario = require('../models/usuario');
 const bcryptjs = require('bcryptjs');
-const { getJWToken } = require("../helpers/generar-jwt");
+const { getJWToken } = require('../helpers/generar-jwt');
+const { googleVerify } = require('../helpers/google-verify');
+
+
+
 
 
 const postLogin = async (req = request, res = response) => {
@@ -46,7 +50,61 @@ const postLogin = async (req = request, res = response) => {
     }
 }
 
+const googleLogin = async(req = request, res = response) =>{
+    
+    
+    const {id_token} = req.body;
+
+    try {
+
+        const {nombre, correo, img } = await googleVerify(id_token);
+
+        let usuario = await Usuario.findOne({correo})
+
+       
+        if (!usuario) {
+            const data = {
+               nombre,
+               correo,
+               password: ':P',
+               img,
+               rol: 'USER_ROLE',
+               google: true 
+            }
+
+            usuario = new Usuario(data);
+            await usuario.save();
+        }
+
+
+        //vañlidar que el usuario no este bloqueado
+        if(!usuario.estado){
+            res.status(401).json({
+                msg: `El usuario ${correo} esta bloqueado favor de contactar al administrador`
+            })
+        }
+
+        //generar el jtw
+        const token = await getJWToken(usuario.id);
+
+        res.json({
+            msg: 'inicio de sesion corrrectamente con google sing',
+            usuario,
+            token
+        })
+        
+    } catch (error) {
+
+        console.log(error);
+        res.status(401).json({
+            msg: `El token:${id_token} no es valido`
+        })
+    }
+
+   
+}
 
 module.exports = {
-    postLogin
+    postLogin,
+    googleLogin
 }
